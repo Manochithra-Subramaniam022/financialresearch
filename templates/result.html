@@ -8,8 +8,9 @@
 <style>
     .results-container {
         width: 100%;
-        max-width: 800px;
+        max-width: 1400px;
         margin: 0 auto;
+        padding: 0 20px;
     }
 
     .badge {
@@ -43,7 +44,7 @@
         width: 100%;
         border-collapse: collapse;
         text-align: left;
-        table-layout: fixed;
+        white-space: nowrap;
     }
 
     th {
@@ -74,20 +75,17 @@
 
     .metric-cell {
         font-weight: 500;
-        width: 25%;
     }
 
     .value-cell {
         font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
         color: var(--primary);
         font-weight: 500;
-        width: 20%;
     }
 
     .source-cell {
         font-size: 0.85rem;
         color: var(--text-muted);
-        width: 35%;
         line-height: 1.4;
     }
 
@@ -248,17 +246,29 @@
             Extraction Complete
         </div>
 
+        <!-- Bar Chart Container -->
+        {% if data and data|length > 0 %}
+        <div
+            style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--glass-border); border-radius: 12px; padding: 1.5rem; margin-bottom: 2.5rem; display: flex; flex-direction: column;">
+            <h3 style="margin-top: 0; color: var(--primary); font-size: 1.1rem; margin-bottom: 1rem;">Primary Metrics
+                Trend (Period 1 vs Period 2)</h3>
+            <div style="position: relative; height: 350px; width: 100%;">
+                <canvas id="mainBarChart"></canvas>
+            </div>
+        </div>
+        {% endif %}
+
         <h2>Financial Data Results</h2>
         <p class="subtitle">Key metrics successfully parsed by Gemini AI.</p>
 
-        <div class="table-wrapper">
+        <div class="table-wrapper" style="margin-top: 2rem;">
             {% if data and data|length > 0 %}
             <table>
                 <thead>
                     <tr>
-                        <th style="width: 20%;">Metric</th>
-                        <th>2024</th>
-                        <th>2025</th>
+                        <th style="width: 25%;">Metric</th>
+                        <th>Period 1</th>
+                        <th>Period 2</th>
                         <th>YoY Growth</th>
                         <th>Trend</th>
                         <th style="text-align: center;">Status</th>
@@ -269,7 +279,7 @@
                     {% for item in data %}
                     <tr>
                         <td class="metric-cell"
-                            title="{% if item.sub_components %}Contains: {{ item.sub_components|join(', ') }}{% endif %}">
+                            title="{% if item is mapping and item.sub_components %}Contains: {{ item.sub_components|join(', ') }}{% endif %}">
                             {% if item is mapping and 'metric' in item %}
                             {{ item.metric }}
                             {% if item.sub_components %}
@@ -277,7 +287,7 @@
                                 Sub-components</span>
                             {% endif %}
                             {% else %}
-                            {{ item }}
+                            {{ item.get('metric', 'Unknown') }}
                             {% endif %}
                         </td>
                         <td class="value-cell">
@@ -289,7 +299,7 @@
                         <td>
                             {% if item is mapping and 'percentage_change' in item and item.percentage_change is not none
                             %}
-                            {% set pct = item.percentage_change %}
+                            {% set pct = item.percentage_change|float %}
                             {% if pct > 0 %}
                             <span class="growth-positive">+{{ pct }}%</span>
                             {% elif pct < 0 %} <span class="growth-negative">{{ pct }}%</span>
@@ -301,10 +311,9 @@
                                 {% endif %}
                         </td>
                         <td>
-                            {% if item is mapping and item.percentage_change is not none %}
-                            <canvas class="sparkline-canvas" data-v24="{{ item.value_2024|replace('\"', ' \\\"') }}"
-                                data-v25="{{ item.value_2025|replace('\"', ' \\\"') }}"
-                                data-pct="{{ item.percentage_change }}"></canvas>
+                            {% if item is mapping and 'percentage_change' in item and item.percentage_change is not none
+                            %}
+                            <canvas class="sparkline-canvas" data-pct="{{ item.percentage_change }}"></canvas>
                             {% else %}
                             -
                             {% endif %}
@@ -312,7 +321,7 @@
                         <td class="status-cell" style="text-align: center;">
                             {% set status_class = 'status-extracted' %}
                             {% if item is mapping and 'status' in item %}
-                            {% if item.status == 'Verified' %}
+                            {% if item.status == 'VERIFIED' %}
                             {% set status_class = 'status-verified' %}
                             {% elif item.status == 'Math Mismatch' %}
                             {% set status_class = 'status-mismatch' %}
@@ -325,7 +334,7 @@
                         <td style="text-align: right;">
                             {% if item is mapping and 'snippet' in item %}
                             <button class="btn-action-small"
-                                onclick="showSource(`{{ item.page }}`, `{{ item.snippet|replace('\`', '\\\`') }}`)">Check
+                                onclick="showSource(`{{ item.get('page', '-') }}`, `{{ item.snippet|replace('\`', '\\\`') }}`)">Check
                                 Source</button>
                             {% endif %}
                         </td>
@@ -333,14 +342,14 @@
                     {% endfor %}
                 </tbody>
             </table>
-            {% else %}
-            <div class="empty-state">
-                <div style="font-size: 3rem; margin-bottom: 1rem;">🔍</div>
-                <h3>No data found</h3>
-                <p>We couldn't extract any structured financial data from this document.</p>
-            </div>
-            {% endif %}
         </div>
+        {% else %}
+        <div class="empty-state">
+            <div style="font-size: 3rem; margin-bottom: 1rem;">🔍</div>
+            <h3>No data found</h3>
+            <p>We couldn't extract any structured financial data from this document.</p>
+        </div>
+        {% endif %}
 
         <div class="actions">
             <div>
@@ -437,6 +446,110 @@
                 }
             });
         });
+
+        // Initialize Main Bar Chart
+        const chartDataStr = `{{ data | tojson | safe }}`;
+        let chartData = [];
+        try {
+            chartData = JSON.parse(chartDataStr);
+        } catch (e) {
+            console.error("Failed to parse chart data", e);
+        }
+
+        if (chartData && chartData.length > 0) {
+            // Filter key metrics
+            const keyMetrics = ['Revenue', 'Operating Expenses', 'Net Profit', 'Total net sales', 'Operating income', 'Net income', 'Products', 'Services', 'Cost of Goods Sold', 'Gross Profit'];
+
+            let filteredData = chartData.filter(item => {
+                if (!item.metric) return false;
+                return keyMetrics.some(km => item.metric.toLowerCase().includes(km.toLowerCase()) || km.toLowerCase().includes(item.metric.toLowerCase()));
+            });
+
+            if (filteredData.length === 0) {
+                // Fallback to first 5 valid items
+                filteredData = chartData.filter(item => item.value_2024 && item.value_2025 && item.value_2024 !== '-' && item.value_2025 !== '-').slice(0, 5);
+            } else {
+                filteredData = filteredData.slice(0, 5);
+            }
+
+            if (filteredData.length > 0) {
+                const labels = filteredData.map(item => item.metric);
+
+                const parseNum = (val) => {
+                    if (!val || val === '-') return 0;
+                    return parseFloat(val.toString().replace(/[^0-9.-]+/g, "")) || 0;
+                };
+
+                const data2024 = filteredData.map(item => parseNum(item.value_2024));
+                const data2025 = filteredData.map(item => parseNum(item.value_2025));
+
+                const ctx = document.getElementById('mainBarChart');
+                if (ctx) {
+                    new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: labels,
+                            datasets: [
+                                {
+                                    label: 'Period 1',
+                                    data: data2024,
+                                    backgroundColor: 'rgba(148, 163, 184, 0.6)',
+                                    borderColor: 'rgba(148, 163, 184, 1)',
+                                    borderWidth: 1,
+                                    borderRadius: 4
+                                },
+                                {
+                                    label: 'Period 2',
+                                    data: data2025,
+                                    backgroundColor: 'rgba(16, 185, 129, 0.6)',
+                                    borderColor: 'rgba(16, 185, 129, 1)',
+                                    borderWidth: 1,
+                                    borderRadius: 4
+                                }
+                            ]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    position: 'top',
+                                    labels: { color: '#E2E8F0', font: { family: 'Inter' } }
+                                },
+                                tooltip: {
+                                    callbacks: {
+                                        label: function (context) {
+                                            let label = context.dataset.label || '';
+                                            if (label) {
+                                                label += ': ';
+                                            }
+                                            if (context.parsed.y !== null) {
+                                                label += new Intl.NumberFormat('en-US', { style: 'decimal' }).format(context.parsed.y);
+                                            }
+                                            return label;
+                                        }
+                                    }
+                                }
+                            },
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                                    ticks: { color: '#94A3B8' }
+                                },
+                                x: {
+                                    grid: { display: false },
+                                    ticks: { color: '#E2E8F0' }
+                                }
+                            }
+                        }
+                    });
+                }
+            } else {
+                const chartContainer = document.getElementById('mainBarChart')?.parentElement?.parentElement;
+                if (chartContainer) chartContainer.style.display = 'none';
+            }
+        }
     });
 </script>
 {% endblock %}

@@ -9,6 +9,9 @@ class User(UserMixin, db.Model):
     username = db.Column(db.String(150), unique=True, nullable=False)
     email = db.Column(db.String(150), unique=True, nullable=False)
     password_hash = db.Column(db.String(256), nullable=False)
+    email_notifications = db.Column(db.Boolean, default=True)
+    high_contrast_mode = db.Column(db.Boolean, default=False)
+    auto_archive_projects = db.Column(db.Boolean, default=False)
     projects = db.relationship('ResearchProject', backref='user', lazy=True)
 
 class ResearchProject(db.Model):

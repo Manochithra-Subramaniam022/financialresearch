@@ -216,6 +216,31 @@
         <h2>
             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="24" height="24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z">
+                </path>
+            </svg>
+            Edit Profile
+        </h2>
+        <form method="POST" action="{{ url_for('auth.update_profile') }}">
+            <div class="form-group" style="margin-bottom: var(--space-4);">
+                <label for="username">Username</label>
+                <input type="text" id="username" name="username" class="form-control"
+                    value="{{ current_user.username }}" required>
+            </div>
+            <div class="form-group" style="margin-bottom: var(--space-4);">
+                <label for="password">New Password (leave blank to keep current)</label>
+                <input type="password" id="password" name="password" class="form-control" placeholder="••••••••">
+            </div>
+            <div class="form-actions" style="margin-top: var(--space-4); justify-content: flex-start;">
+                <button type="submit" class="btn-gradient">Save Changes</button>
+            </div>
+        </form>
+    </div>
+
+    <div class="settings-section">
+        <h2>
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="24" height="24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                     d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z">
                 </path>
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -230,7 +255,8 @@
                 <span class="setting-desc">Receive an email when an extraction finishes processing.</span>
             </div>
             <label class="toggle-switch">
-                <input type="checkbox" checked>
+                <input type="checkbox" id="email-notifications-toggle" {% if current_user.email_notifications
+                    %}checked{% endif %}>
                 <span class="slider"></span>
             </label>
         </div>
@@ -241,7 +267,8 @@
                 <span class="setting-desc">Automatically archive projects that are older than 30 days.</span>
             </div>
             <label class="toggle-switch">
-                <input type="checkbox">
+                <input type="checkbox" id="auto-archive-toggle" {% if current_user.auto_archive_projects %}checked{%
+                    endif %}>
                 <span class="slider"></span>
             </label>
         </div>
@@ -252,7 +279,8 @@
                 <span class="setting-desc">Increase contrast for better readability across the dashboard.</span>
             </div>
             <label class="toggle-switch">
-                <input type="checkbox">
+                <input type="checkbox" id="high-contrast-toggle" {% if current_user.high_contrast_mode %}checked{% endif
+                    %}>
                 <span class="slider"></span>
             </label>
         </div>
@@ -271,4 +299,50 @@
     </div> 
     -->
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const autoArchive = document.getElementById('auto-archive-toggle');
+        const highContrast = document.getElementById('high-contrast-toggle');
+        const emailNotifications = document.getElementById('email-notifications-toggle');
+
+        function updateSetting(key, value) {
+            fetch('/api/settings/update', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ [key]: value })
+            }).then(res => res.json()).then(data => {
+                if (data.success && key === 'high_contrast_mode') {
+                    if (value) {
+                        document.body.classList.add('high-contrast');
+                    } else {
+                        document.body.classList.remove('high-contrast');
+                    }
+                }
+            }).catch(err => console.error(err));
+        }
+
+        if (autoArchive) {
+            autoArchive.addEventListener('change', (e) => {
+                updateSetting('auto_archive_projects', e.target.checked);
+            });
+        }
+
+        if (highContrast) {
+            highContrast.addEventListener('change', (e) => {
+                updateSetting('high_contrast_mode', e.target.checked);
+            });
+        }
+
+        if (emailNotifications) {
+            emailNotifications.addEventListener('change', (e) => {
+                updateSetting('email_notifications', e.target.checked);
+            });
+        }
+    });
+</script>
 {% endblock %}

@@ -51,6 +51,18 @@
             --content-max-width: 1240px;
         }
 
+        body.high-contrast {
+            --bg-color: #000000;
+            --text-muted: #E5E7EB;
+            --glass-bg: rgba(0, 0, 0, 0.9);
+            --glass-border: rgba(255, 255, 255, 0.4);
+            --glass-shadow: none;
+            --primary: #22D3EE;
+            --primary-hover: #67E8F9;
+            --gradient-start: #F472B6;
+            --gradient-end: #A78BFA;
+        }
+
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             background-color: var(--bg-color);
@@ -212,9 +224,48 @@
         .auth-container {
             width: 100%;
             max-width: 440px;
-            margin-top: var(--space-12);
+            margin: 10vh auto 0 auto;
             display: flex;
             flex-direction: column;
+        }
+
+        .profile-dropdown {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+        }
+
+        .dropdown-menu {
+            display: none;
+            position: absolute;
+            right: 0;
+            top: 100%;
+            margin-top: 8px;
+            background: var(--bg-color);
+            min-width: 220px;
+            border: 1px solid var(--glass-border);
+            border-radius: var(--space-2);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            padding: var(--space-2) 0;
+        }
+
+        .profile-dropdown:hover .dropdown-menu {
+            display: block;
+        }
+
+        .dropdown-menu a {
+            color: var(--text-main);
+            padding: 10px 16px;
+            text-decoration: none;
+            display: block;
+            font-size: 0.95rem;
+            transition: background 0.2s;
+        }
+
+        .dropdown-menu a:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--primary);
         }
 
         .glass-card {
@@ -403,12 +454,22 @@
                 transform: rotate(360deg);
             }
         }
+
+        /* Ping Animation for Notification Bell */
+        @keyframes ping {
+
+            75%,
+            100% {
+                transform: scale(2.2);
+                opacity: 0;
+            }
+        }
     </style>
     {% block extra_css %}
     {% endblock %}
 </head>
 
-<body>
+<body class="{% if current_user.is_authenticated and current_user.high_contrast_mode %}high-contrast{% endif %}">
 
     <nav class="navbar">
         <a href="{{ url_for('index') }}" class="navbar-brand">
@@ -422,14 +483,80 @@
             </svg>
             Research Portal
         </a>
+
+        {% if current_user.is_authenticated %}
+        <div style="flex: 1; display: flex; align-items: center; padding-left: var(--space-6);">
+            <span
+                style="background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: 600; font-size: 1.05rem;">
+                Good to see you, {{ current_user.username }}
+            </span>
+        </div>
+        {% endif %}
+
         <div class="navbar-nav">
             {% if current_user.is_authenticated %}
-            <span class="nav-link" style="color: var(--text-muted); font-size: 0.85rem;">{{ current_user.username
-                }}</span>
-            <a href="{{ url_for('dashboard') }}" class="nav-link">Dashboard</a>
-            <a href="{{ url_for('auth.logout') }}" class="nav-link">Log out</a>
+            <div class="profile-dropdown">
+                <span class="nav-link profile-toggle"
+                    style="color: var(--text-main); font-size: 1.05rem; font-weight: 500; cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                    </svg>
+                    {{ current_user.username }}
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="16" height="16"
+                        style="color: var(--text-muted);">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                    </svg>
+                </span>
+                <div class="dropdown-menu">
+                    <div style="padding: 12px 16px; border-bottom: 1px solid var(--glass-border); margin-bottom: 8px;">
+                        <p style="margin: 0; font-weight: 600; font-size: 0.95rem;">{{ current_user.username }}</p>
+                        <p style="margin: 0; font-size: 0.8rem; color: var(--text-muted);">{{ current_user.email }}</p>
+                    </div>
+                    <a href="{{ url_for('settings') }}" style="display: flex; align-items: center; gap: 8px;">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="16" height="16">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z">
+                            </path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                        </svg>
+                        Edit Profile
+                    </a>
+                </div>
+            </div>
+
+            <!-- Premium Notification Bell -->
+            <div style="position: relative; display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 8px; border-radius: 50%; transition: background 0.2s;"
+                onmouseover="this.style.background='rgba(255,255,255,0.05)'"
+                onmouseout="this.style.background='transparent'">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="22" height="22"
+                    style="color: var(--text-muted);">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9">
+                    </path>
+                </svg>
+                <!-- Static Dot -->
+                <div
+                    style="position: absolute; top: 8px; right: 10px; width: 8px; height: 8px; background-color: var(--gradient-start); border-radius: 50%; border: 2px solid var(--bg-color);">
+                </div>
+                <!-- Pulsing Animation Dot -->
+                <div
+                    style="position: absolute; top: 8px; right: 10px; width: 8px; height: 8px; background-color: var(--gradient-start); border-radius: 50%; opacity: 0.7; animation: ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;">
+                </div>
+            </div>
+
+            <a href="{{ url_for('auth.logout') }}" class="nav-link"
+                style="font-size: 1.05rem; display: flex; align-items: center; gap: 8px;">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1">
+                    </path>
+                </svg>
+                Log out
+            </a>
             {% else %}
-            <a href="{{ url_for('auth.login') }}" class="nav-link">Log in</a>
+            <a href="{{ url_for('auth.login') }}" class="nav-link" style="font-size: 1.05rem;">Log in</a>
             <a href="{{ url_for('auth.signup') }}" class="btn-gradient">Sign up</a>
             {% endif %}
         </div>
@@ -494,6 +621,7 @@
             });
         });
     </script>
+    {% block extra_js %}{% endblock %}
 </body>
 
 </html>

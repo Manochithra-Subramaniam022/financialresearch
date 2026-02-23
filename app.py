@@ -3,13 +3,14 @@ import json
 import tempfile
 from flask import Flask, render_template, request, jsonify, flash, redirect, url_for, send_file
 from flask_login import LoginManager, login_required, current_user
+from datetime import datetime, timedelta
 import pdfplumber
 import google.generativeai as genai
 from dotenv import load_dotenv
 import threading
 import pandas as pd
 import io
-from openpyxl.styles import PatternFill
+from openpyxl.styles import PatternFill, Font
 
 from models import db, User, ResearchProject
 from auth import auth as auth_blueprint
@@ -71,6 +72,18 @@ def index():
 @app.route('/dashboard', methods=['GET'])
 @login_required
 def dashboard():
+    if current_user.auto_archive_projects:
+        thirty_days_ago = datetime.utcnow() - timedelta(days=30)
+        old_projects = ResearchProject.query.filter(
+            ResearchProject.user_id == current_user.id,
+            ResearchProject.is_archived == False,
+            ResearchProject.uploaded_at < thirty_days_ago
+        ).all()
+        for p in old_projects:
+            p.is_archived = True
+        if old_projects:
+            db.session.commit()
+
     projects = ResearchProject.query.filter_by(user_id=current_user.id, is_archived=False).order_by(ResearchProject.uploaded_at.desc()).all()
     return render_template('index.html', projects=projects)
 
@@ -244,12 +257,16 @@ def export_excel(project_id):
         df.to_excel(writer, index=False, sheet_name='Financials')
         worksheet = writer.sheets['Financials']
         
-        # Format the Growth % column based on value
+        # 1. Bold Headers and Freeze Panes
+        header_font = Font(bold=True)
+        for col in range(1, 6):
+            worksheet.cell(row=1, column=col).font = header_font
+        worksheet.freeze_panes = 'A2'
+        
+        # 2. Format the Growth % column based on value
         pos_fill = PatternFill(start_color="e6FFe6", end_color="e6FFe6", fill_type="solid")
         neg_fill = PatternFill(start_color="FFe6e6", end_color="FFe6e6", fill_type="solid")
         
-        # Dimensions: 1-indexed, headers on row 1, data starts row 2.
-        # Columns mapped to A,B,C,D,E. Growth % is D (col 4)
         for row in range(2, len(rows) + 2):
             cell = worksheet.cell(row=row, column=4)
             val = cell.value
@@ -259,12 +276,24 @@ def export_excel(project_id):
                 elif val < 0:
                     cell.fill = neg_fill
                     
-        # Widen metric column
-        worksheet.column_dimensions['A'].width = 30
+        # Widen columns
+        worksheet.column_dimensions['A'].width = 40
         worksheet.column_dimensions['B'].width = 20
         worksheet.column_dimensions['C'].width = 20
         worksheet.column_dimensions['D'].width = 15
         worksheet.column_dimensions['E'].width = 15
+
+        # 3. Create Summary Metadata Sheet
+        summary_sheet = writer.book.create_sheet('Summary')
+        summary_sheet.append(['Metadata', 'Value'])
+        summary_sheet.append(['Company Name', project.company_name])
+        summary_sheet.append(['Date of Extraction', datetime.utcnow().strftime('%Y-%m-%d')])
+        summary_sheet.append(['Extraction Engine', 'Gemini 2.5 Flash API'])
+
+        for col in range(1, 3):
+            summary_sheet.cell(row=1, column=col).font = header_font
+        summary_sheet.column_dimensions['A'].width = 25
+        summary_sheet.column_dimensions['B'].width = 40
                     
     buffer.seek(0)
     file_name = f"{project.company_name.replace(' ', '_')}_Analysis.xlsx"
@@ -273,6 +302,18 @@ def export_excel(project_id):
 @app.route('/projects', methods=['GET'])
 @login_required
 def projects():
+    if current_user.auto_archive_projects:
+        thirty_days_ago = datetime.utcnow() - timedelta(days=30)
+        old_projects = ResearchProject.query.filter(
+            ResearchProject.user_id == current_user.id,
+            ResearchProject.is_archived == False,
+            ResearchProject.uploaded_at < thirty_days_ago
+        ).all()
+        for p in old_projects:
+            p.is_archived = True
+        if old_projects:
+            db.session.commit()
+
     # Only active projects
     projects = ResearchProject.query.filter_by(user_id=current_user.id, is_archived=False).order_by(ResearchProject.uploaded_at.desc()).all()
     return render_template('projects.html', projects=projects, title="My Projects")
@@ -284,10 +325,61 @@ def archive():
     projects = ResearchProject.query.filter_by(user_id=current_user.id, is_archived=True).order_by(ResearchProject.uploaded_at.desc()).all()
     return render_template('archive.html', projects=projects, title="Archive")
 
+@app.route('/delete_project/<int:project_id>', methods=['POST'])
+@login_required
+def delete_project(project_id):
+    project = ResearchProject.query.get_or_404(project_id)
+    if project.user_id != current_user.id:
+        flash('Unauthorized access.', 'error')
+        return redirect(url_for('dashboard'))
+    
+    db.session.delete(project)
+    db.session.commit()
+    flash('Project deleted successfully.', 'success')
+    return redirect(request.referrer or url_for('dashboard'))
+
+@app.route('/reprocess_project/<int:project_id>', methods=['POST'])
+@login_required
+def reprocess_project(project_id):
+    project = ResearchProject.query.get_or_404(project_id)
+    if project.user_id != current_user.id:
+        flash('Unauthorized access.', 'error')
+        return redirect(url_for('dashboard'))
+    
+    try:
+        new_data = process_financials(project.extracted_text)
+        project.data = new_data
+        project.status = 'Completed'
+        db.session.commit()
+        flash('Project reprocessed successfully.', 'success')
+        return redirect(url_for('view_result', project_id=project.id))
+    except Exception as e:
+        project.status = 'Failed'
+        db.session.commit()
+        flash(f'Failed to reprocess: {e}', 'error')
+        return redirect(request.referrer or url_for('dashboard'))
+
 @app.route('/settings', methods=['GET'])
 @login_required
 def settings():
     return render_template('settings.html', title="Settings")
+
+@app.route('/api/settings/update', methods=['POST'])
+@login_required
+def update_settings():
+    data = request.get_json()
+    if not data:
+        return jsonify({"success": False, "error": "Invalid payload"}), 400
+        
+    if 'high_contrast_mode' in data:
+        current_user.high_contrast_mode = bool(data['high_contrast_mode'])
+    if 'auto_archive_projects' in data:
+        current_user.auto_archive_projects = bool(data['auto_archive_projects'])
+    if 'email_notifications' in data:
+        current_user.email_notifications = bool(data['email_notifications'])
+        
+    db.session.commit()
+    return jsonify({"success": True})
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)

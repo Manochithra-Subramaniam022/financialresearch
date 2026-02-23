@@ -139,7 +139,8 @@
 {% if projects %}
 <div class="dashboard-grid">
     {% for project in projects %}
-    <a href="{{ url_for('view_result', project_id=project.id) }}" class="grid-card" id="project-card-{{ project.id }}">
+    <div class="grid-card" id="project-card-{{ project.id }}"
+        onclick="window.location.href='{{ url_for('view_result', project_id=project.id) }}'">
         <div class="filing-header">
             <div class="filing-icon">
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -149,14 +150,28 @@
                 </svg>
             </div>
 
-            <button type="button" class="restore-btn" onclick="restoreProject(event, {{ project.id }})"
-                aria-label="Restore Project" title="Restore to Dashboard">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6">
-                    </path>
-                </svg>
-            </button>
+            <div style="display: flex; gap: 8px;">
+                <button type="button" class="restore-btn" onclick="restoreProject(event, {{ project.id }})"
+                    aria-label="Restore Project" title="Restore to Dashboard">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6">
+                        </path>
+                    </svg>
+                </button>
+                <form action="{{ url_for('delete_project', project_id=project.id) }}" method="POST"
+                    style="margin: 0; display: inline;"
+                    onsubmit="event.stopPropagation(); return confirm('Are you sure you want to completely delete this dataset?');">
+                    <button type="submit" class="archive-btn" aria-label="Delete Project"
+                        style="color: #ef4444; border-color: rgba(239,68,68,0.3); background: rgba(239,68,68,0.1);">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16">
+                            </path>
+                        </svg>
+                    </button>
+                </form>
+            </div>
         </div>
         <h3 class="filing-title">{{ project.filename }}</h3>
         <p class="filing-company">{{ project.company_name }}</p>
@@ -165,7 +180,7 @@
             <span>{{ project.uploaded_at.strftime('%b %d, %Y') }}</span>
             <span>Archived</span>
         </div>
-    </a>
+    </div>
     {% endfor %}
 </div>
 {% else %}

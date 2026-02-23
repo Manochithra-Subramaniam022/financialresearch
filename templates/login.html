@@ -36,7 +36,10 @@
                 <label for="remember">Remember me for 30 days</label>
             </div>
 
-            <div class="form-actions">
+            <div class="form-actions" style="display: flex; justify-content: space-between; align-items: center;">
+                <a href="{{ url_for('auth.forgot_password') }}"
+                    style="font-size: 0.9rem; color: var(--primary); text-decoration: none; font-weight: 500;">Forgot
+                    password?</a>
                 <button type="submit" class="btn-gradient">Log in</button>
             </div>
         </form>
