@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+
+{% block title %}Welcome - Research Portal{% endblock %}
+
+{% block extra_css %}
+<style>
+    .hero {
+        text-align: center;
+        margin-top: 5rem;
+        max-width: 800px;
+    }
+
+    .hero h1 {
+        font-size: 3.5rem;
+        font-weight: 700;
+        line-height: 1.1;
+        margin-bottom: 1.5rem;
+        background: linear-gradient(135deg, #fff 0%, #94A3B8 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
+    .hero p {
+        font-size: 1.25rem;
+        color: var(--text-muted);
+        margin-bottom: 3rem;
+        line-height: 1.6;
+        max-width: 600px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .hero-buttons {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+    }
+
+    .btn-outline {
+        background: transparent;
+        color: var(--text-main);
+        border: 1px solid var(--glass-border);
+        padding: 0.75rem 2rem;
+        border-radius: 8px;
+        font-weight: 500;
+        font-size: 1rem;
+        text-decoration: none;
+        transition: all 0.2s ease;
+    }
+
+    .btn-outline:hover {
+        background: rgba(255, 255, 255, 0.05);
+        border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    .btn-gradient.large {
+        padding: 0.75rem 2.5rem;
+        font-size: 1rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="hero">
+    <h1>Financial Intelligence at Light Speed.</h1>
+    <p>Upload complex PDF reports, and our Gemini AI agent will instantly extract strictly formatted, analysis-ready
+        metrics to a clean dashboard.</p>
+    <div class="hero-buttons">
+        <a href="{{ url_for('auth.signup') }}" class="btn-gradient large">Get Started</a>
+        <a href="{{ url_for('auth.login') }}" class="btn-outline">Sign In</a>
+    </div>
+</div>
+{% endblock %}

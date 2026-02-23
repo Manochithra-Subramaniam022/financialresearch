@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} - Research Portal{% endblock %}
+
+{% block content %}
+<div class="dashboard-header"
+    style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-8); width: 100%;">
+    <h1 style="margin: 0; font-size: 2rem; font-weight: 700;">{{ title }}</h1>
+</div>
+
+<div class="glass-card"
+    style="text-align: center; padding: 60px 20px; max-width: 600px; margin: 0 auto; margin-top: 40px;">
+    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="64" height="64"
+        style="color: var(--text-muted); margin-bottom: var(--space-4);">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+    </svg>
+    <h2 style="font-size: 1.5rem; margin-top: 0; margin-bottom: 8px;">Feature in Development</h2>
+    <p style="color: var(--text-muted); line-height: 1.5;">The <strong>{{ title }}</strong> module is currently being
+        built. It will be available in an upcoming update!</p>
+    <a href="{{ url_for('dashboard') }}" class="btn-gradient" style="margin-top: 24px;">Return to Dashboard</a>
+</div>
+{% endblock %}

@@ -1,0 +1,429 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Research Portal{% endblock %}
+
+{% block extra_css %}
+<style>
+    .dashboard-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: var(--space-8);
+        width: 100%;
+    }
+
+    .dashboard-header h1 {
+        margin: 0;
+        font-size: 2rem;
+        font-weight: 700;
+    }
+
+    .dashboard-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 24px;
+        width: 100%;
+        align-items: stretch;
+    }
+
+    /* Grid Cards */
+    .grid-card {
+        background: var(--glass-bg);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1px solid var(--glass-border);
+        border-radius: var(--space-4);
+        padding: var(--space-6);
+        box-shadow: var(--glass-shadow);
+        display: flex;
+        flex-direction: column;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        text-decoration: none;
+        color: var(--text-main);
+    }
+
+    a.grid-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+        border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    /* New Research Card (Dropzone) */
+    .upload-card {
+        text-align: center;
+        border: 2px dashed rgba(255, 255, 255, 0.2);
+        cursor: pointer;
+        justify-content: center;
+        align-items: center;
+        min-height: 220px;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .upload-card:hover,
+    .upload-card.dragover {
+        border-color: var(--primary);
+        background-color: rgba(99, 102, 241, 0.1);
+    }
+
+    .upload-icon {
+        font-size: 2.5rem;
+        color: var(--primary);
+        margin-bottom: var(--space-2);
+    }
+
+    /* Loading Overlay */
+    .loading-overlay {
+        display: none;
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(15, 23, 42, 0.9);
+        backdrop-filter: blur(4px);
+        justify-content: center;
+        align-items: center;
+        flex-direction: column;
+        z-index: 10;
+        border-radius: var(--space-4);
+    }
+
+    .spinner {
+        border: 3px solid rgba(255, 255, 255, 0.1);
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        border-left-color: var(--primary);
+        animation: spin 1s linear infinite;
+        margin-bottom: var(--space-3);
+    }
+
+    @keyframes spin {
+        0% {
+            transform: rotate(0deg);
+        }
+
+        100% {
+            transform: rotate(360deg);
+        }
+    }
+
+    /* Progress Bar */
+    .progress-container {
+        width: 80%;
+        height: 6px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 4px;
+        margin-top: var(--space-4);
+        overflow: hidden;
+    }
+
+    .progress-bar-fill {
+        height: 100%;
+        width: 0%;
+        background: var(--primary);
+        transition: width 0.3s ease;
+        animation: pulse-progress 2s infinite ease-in-out;
+    }
+
+    @keyframes pulse-progress {
+        0% {
+            opacity: 0.8;
+        }
+
+        50% {
+            opacity: 1;
+        }
+
+        100% {
+            opacity: 0.8;
+        }
+    }
+
+    /* Existing Cards */
+    .filing-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: var(--space-4);
+        width: 100%;
+    }
+
+    .archive-btn {
+        background: transparent;
+        border: none;
+        color: var(--text-muted);
+        cursor: pointer;
+        padding: var(--space-2);
+        border-radius: var(--space-1);
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10;
+        position: relative;
+    }
+
+    .archive-btn:hover {
+        color: var(--error);
+        background: rgba(239, 68, 68, 0.1);
+    }
+
+    .filing-icon {
+        background: rgba(99, 102, 241, 0.15);
+        color: var(--primary);
+        padding: var(--space-3);
+        border-radius: var(--space-2);
+    }
+
+    .filing-icon svg {
+        width: 24px;
+        height: 24px;
+    }
+
+    .filing-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin: 0 0 var(--space-1) 0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        width: 100%;
+    }
+
+    .filing-company {
+        color: var(--text-muted);
+        font-size: 0.85rem;
+        margin: 0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        width: 100%;
+    }
+
+    .filing-meta {
+        margin-top: auto;
+        padding-top: var(--space-4);
+        border-top: 1px solid var(--glass-border);
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.8rem;
+        color: var(--text-muted);
+    }
+
+    input[type="file"] {
+        display: none;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-header">
+    <h1>Research Library</h1>
+</div>
+
+{% with messages = get_flashed_messages() %}
+{% if messages %}
+<ul class="flashes">
+    {% for message in messages %}
+    <li class="error">{{ message }}</li>
+    {% endfor %}
+</ul>
+{% endif %}
+{% endwith %}
+
+<!-- Global error display for AJAX -->
+<ul class="flashes" id="ajaxErrorContainer" style="display: none;">
+    <li class="error" id="ajaxErrorMessage"></li>
+</ul>
+
+
+<div class="dashboard-grid">
+
+    <!-- Card 1: New Research Dropzone -->
+    <div class="grid-card upload-card" id="dropZone" onclick="document.getElementById('fileInput').click()">
+        <!-- Analyzing Overlay -->
+        <div class="loading-overlay" id="loadingOverlay">
+            <div class="spinner"></div>
+            <span style="font-weight: 500; font-size: 0.9rem;">Processing Data...</span>
+            <div class="progress-container">
+                <div class="progress-bar-fill" id="progressBar"></div>
+            </div>
+        </div>
+
+        <div class="upload-icon">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="48" height="48">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+            </svg>
+        </div>
+        <div style="font-weight: 500; margin-bottom: 4px;">New Research</div>
+        <div style="font-size: 0.85rem; color: var(--text-muted);">PDF files only</div>
+    </div>
+    <input type="file" name="pdf_file" id="fileInput" accept=".pdf" onchange="handleFileSelect(this)">
+
+    <!-- Historical Cards -->
+    {% for project in projects %}
+    <a href="{{ url_for('view_result', project_id=project.id) }}" class="grid-card" id="project-card-{{ project.id }}">
+        <div class="filing-header">
+            <div class="filing-icon">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
+                    </path>
+                </svg>
+            </div>
+
+            <button type="button" class="archive-btn" onclick="archiveProject(event, {{ project.id }})"
+                aria-label="Archive Project">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4">
+                    </path>
+                </svg>
+            </button>
+        </div>
+        <h3 class="filing-title">{{ project.filename }}</h3>
+        <p class="filing-company">{{ project.company_name }}</p>
+
+        <div class="filing-meta">
+            <span>{{ project.uploaded_at.strftime('%b %d, %Y') }}</span>
+            <span
+                style="color: {% if project.status == 'Completed' %}var(--success){% elif project.status == 'Failed' %}var(--error){% else %}var(--primary){% endif %};">
+                {{ project.status }}
+            </span>
+        </div>
+    </a>
+    {% endfor %}
+
+</div>
+
+<script>
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('fileInput');
+    const loadingOverlay = document.getElementById('loadingOverlay');
+    const progressBar = document.getElementById('progressBar');
+    const ajaxErrorContainer = document.getElementById('ajaxErrorContainer');
+    const ajaxErrorMessage = document.getElementById('ajaxErrorMessage');
+
+    function showError(message) {
+        ajaxErrorMessage.textContent = message;
+        ajaxErrorContainer.style.display = 'block';
+        loadingOverlay.style.display = 'none';
+
+        // Hide error after 5s
+        setTimeout(() => {
+            ajaxErrorContainer.style.display = 'none';
+        }, 5000);
+    }
+
+    function uploadFile(file) {
+        if (!file || file.type !== 'application/pdf') {
+            showError("Please select a valid PDF file.");
+            return;
+        }
+
+        // Show UI loading state
+        ajaxErrorContainer.style.display = 'none';
+        loadingOverlay.style.display = 'flex';
+        progressBar.style.width = '10%'; // Initial fake progress
+
+        // Fake progress animation while waiting for server response
+        let fakeProgress = 10;
+        const progressInterval = setInterval(() => {
+            if (fakeProgress < 90) {
+                fakeProgress += Math.random() * 5;
+                progressBar.style.width = fakeProgress + '%';
+            }
+        }, 500);
+
+        // Prepare AJAX Payload
+        const formData = new FormData();
+        formData.append('pdf_file', file);
+
+        // Send initial POST to start the background thread
+        fetch("{{ url_for('api_upload_file') }}", {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(data => { throw new Error(data.error || "Upload failed") });
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success && data.status === "Pending") {
+                    // Begin Polling the status endpoint
+                    pollStatus(data.project_id, progressInterval);
+                } else {
+                    throw new Error("Unexpected response starting upload.");
+                }
+            })
+            .catch(error => {
+                clearInterval(progressInterval);
+                progressBar.style.width = '0%';
+                showError(error.message);
+                fileInput.value = '';
+            });
+    }
+
+    function pollStatus(projectId, progressInterval) {
+        let pollTimer = setInterval(() => {
+            fetch(`/api/status/${projectId}`, {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === "Completed") {
+                        clearInterval(pollTimer);
+                        clearInterval(progressInterval);
+                        progressBar.style.width = '100%';
+                        setTimeout(() => {
+                            window.location.href = data.redirectTo;
+                        }, 500);
+                    } else if (data.status === "Failed") {
+                        clearInterval(pollTimer);
+                        clearInterval(progressInterval);
+                        showError("Processing failed. Please check the document and try again.");
+                        progressBar.style.width = '0%';
+                        fileInput.value = '';
+                    }
+                    // If "Pending", continue polling
+                })
+                .catch(err => {
+                    console.error("Polling error:", err);
+                });
+        }, 2000); // Poll every 2 seconds
+    }
+
+    function handleFileSelect(input) {
+        if (input.files.length) uploadFile(input.files[0]);
+    }
+
+    dropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropZone.classList.add('dragover');
+    });
+
+    dropZone.addEventListener('dragleave', () => {
+        dropZone.classList.remove('dragover');
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('dragover');
+        if (e.dataTransfer.files.length) {
+            fileInput.files = e.dataTransfer.files;
+            uploadFile(e.dataTransfer.files[0]);
+        }
+    });
+
+    // Prevent default drop on document to avoid opening file in browser
+    document.addEventListener('dragover', e => e.preventDefault());
+    document.addEventListener('drop', e => e.preventDefault());
+</script>
+{% endblock %}

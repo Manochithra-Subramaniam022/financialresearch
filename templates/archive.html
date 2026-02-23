@@ -1,0 +1,225 @@
+{% extends "base.html" %}
+
+{% block title %}Archive - Research Portal{% endblock %}
+
+{% block extra_css %}
+<style>
+    .dashboard-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 24px;
+        width: 100%;
+        align-items: stretch;
+    }
+
+    .grid-card {
+        background: var(--glass-bg);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1px solid var(--glass-border);
+        border-radius: var(--space-4);
+        padding: var(--space-6);
+        box-shadow: var(--glass-shadow);
+        transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.3s ease;
+        text-decoration: none;
+        color: inherit;
+        display: flex;
+        flex-direction: column;
+        cursor: pointer;
+        min-height: 180px;
+        opacity: 0.8;
+        /* Archived items look slightly faded */
+    }
+
+    .grid-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+        border-color: rgba(99, 102, 241, 0.4);
+        opacity: 1;
+    }
+
+    .filing-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: var(--space-4);
+        width: 100%;
+    }
+
+    .restore-btn {
+        background: transparent;
+        border: none;
+        color: var(--text-muted);
+        cursor: pointer;
+        padding: var(--space-2);
+        border-radius: var(--space-1);
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10;
+        position: relative;
+    }
+
+    .restore-btn:hover {
+        color: var(--success);
+        background: rgba(16, 185, 129, 0.1);
+    }
+
+    .filing-icon {
+        background: rgba(99, 102, 241, 0.05);
+        color: var(--text-muted);
+        padding: var(--space-3);
+        border-radius: var(--space-2);
+    }
+
+    .filing-icon svg {
+        width: 24px;
+        height: 24px;
+    }
+
+    .filing-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin: 0 0 var(--space-1) 0;
+        color: var(--text-muted);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        width: 100%;
+    }
+
+    .filing-company {
+        color: var(--text-muted);
+        font-size: 0.85rem;
+        margin: 0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        width: 100%;
+    }
+
+    .filing-meta {
+        margin-top: auto;
+        padding-top: var(--space-4);
+        border-top: 1px solid var(--glass-border);
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.8rem;
+        font-weight: 500;
+        color: var(--text-muted);
+    }
+
+    @media (max-width: 768px) {
+        .dashboard-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-header"
+    style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-8); width: 100%;">
+    <h1 style="margin: 0; font-size: 2rem; font-weight: 700;">Archive</h1>
+</div>
+
+<div class="flashes-container">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <ul class="flashes">
+        {% for category, message in messages %}
+        <li class="{{ category }}">{{ message }}</li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+    {% endwith %}
+</div>
+
+{% if projects %}
+<div class="dashboard-grid">
+    {% for project in projects %}
+    <a href="{{ url_for('view_result', project_id=project.id) }}" class="grid-card" id="project-card-{{ project.id }}">
+        <div class="filing-header">
+            <div class="filing-icon">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
+                    </path>
+                </svg>
+            </div>
+
+            <button type="button" class="restore-btn" onclick="restoreProject(event, {{ project.id }})"
+                aria-label="Restore Project" title="Restore to Dashboard">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6">
+                    </path>
+                </svg>
+            </button>
+        </div>
+        <h3 class="filing-title">{{ project.filename }}</h3>
+        <p class="filing-company">{{ project.company_name }}</p>
+
+        <div class="filing-meta">
+            <span>{{ project.uploaded_at.strftime('%b %d, %Y') }}</span>
+            <span>Archived</span>
+        </div>
+    </a>
+    {% endfor %}
+</div>
+{% else %}
+<div class="glass-card"
+    style="text-align: center; padding: 60px 20px; max-width: 600px; margin: 0 auto; margin-top: 40px; border-style: dashed;">
+    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="64" height="64"
+        style="color: var(--text-muted); margin-bottom: var(--space-4);">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"></path>
+    </svg>
+    <h2 style="font-size: 1.5rem; margin-top: 0; margin-bottom: 8px;">Archive Empty</h2>
+    <p style="color: var(--text-muted); line-height: 1.5;">You haven't archived any projects. Keeping a clean dashboard
+        is always a good thing!</p>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function restoreProject(event, projectId) {
+        event.preventDefault();
+        event.stopPropagation();
+
+        fetch(`/api/archive/${projectId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify({ is_archived: false }) // Restore
+        })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    const card = document.getElementById(`project-card-${projectId}`);
+                    if (card) {
+                        card.style.opacity = '0';
+                        setTimeout(() => {
+                            card.remove();
+                            // If no cards left visually, reload to show empty state
+                            const cardsContainer = document.querySelector('.dashboard-grid');
+                            if (cardsContainer && cardsContainer.children.length === 0) {
+                                window.location.reload();
+                            }
+                        }, 300);
+                    }
+                } else {
+                    alert(data.error || "Failed to restore project.");
+                }
+            })
+            .catch(err => {
+                console.error("Restoring error:", err);
+                alert("An unexpected error occurred.");
+            });
+    }
+</script>
+{% endblock %}

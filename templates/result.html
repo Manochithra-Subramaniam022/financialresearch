@@ -1,0 +1,442 @@
+{% extends "base.html" %}
+
+{% block title %}Extraction Results - Research Portal{% endblock %}
+
+{% block extra_css %}
+<!-- Include Chart.js for sparklines -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+    .results-container {
+        width: 100%;
+        max-width: 800px;
+        margin: 0 auto;
+    }
+
+    .badge {
+        display: inline-flex;
+        align-items: center;
+        background-color: rgba(16, 185, 129, 0.1);
+        border: 1px solid rgba(16, 185, 129, 0.2);
+        color: #6EE7B7;
+        padding: 0.35rem 1rem;
+        border-radius: 9999px;
+        font-size: 0.85rem;
+        font-weight: 500;
+        margin-bottom: 1.5rem;
+    }
+
+    .badge svg {
+        width: 16px;
+        height: 16px;
+        margin-bottom: var(--space-6);
+    }
+
+    .table-wrapper {
+        width: 100%;
+        overflow-x: auto;
+        margin-top: var(--space-6);
+        border-radius: var(--space-2);
+        border: 1px solid var(--glass-border);
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        text-align: left;
+        table-layout: fixed;
+    }
+
+    th {
+        background-color: rgba(15, 23, 42, 0.6);
+        color: var(--text-muted);
+        font-weight: 600;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid var(--glass-border);
+    }
+
+    td {
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid var(--glass-border);
+        font-size: 0.95rem;
+        color: var(--text-main);
+    }
+
+    tr:last-child td {
+        border-bottom: none;
+    }
+
+    tr:hover {
+        background-color: rgba(255, 255, 255, 0.02);
+    }
+
+    .metric-cell {
+        font-weight: 500;
+        width: 25%;
+    }
+
+    .value-cell {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+        color: var(--primary);
+        font-weight: 500;
+        width: 20%;
+    }
+
+    .source-cell {
+        font-size: 0.85rem;
+        color: var(--text-muted);
+        width: 35%;
+        line-height: 1.4;
+    }
+
+    .source-quote {
+        font-style: italic;
+        background: rgba(255, 255, 255, 0.03);
+        padding: 2px 4px;
+        border-radius: 4px;
+        display: inline-block;
+        margin-top: 4px;
+    }
+
+    .status-cell {
+        width: 20%;
+        text-align: right;
+    }
+
+    .status-badge {
+        display: inline-block;
+        padding: 4px 10px;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .status-verified {
+        background: rgba(16, 185, 129, 0.15);
+        color: #10B981;
+        border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    .status-mismatch {
+        background: rgba(239, 68, 68, 0.15);
+        color: #EF4444;
+        border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+
+    .status-extracted {
+        background: rgba(148, 163, 184, 0.1);
+        color: var(--text-muted);
+        border: 1px solid rgba(148, 163, 184, 0.2);
+    }
+
+    .value-cell {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+        color: var(--primary);
+        font-weight: 500;
+    }
+
+    .growth-positive {
+        color: #10B981;
+        font-weight: 600;
+    }
+
+    .growth-negative {
+        color: #EF4444;
+        font-weight: 600;
+    }
+
+    .sparkline-canvas {
+        max-width: 100px;
+        height: 30px !important;
+    }
+
+    .btn-action-small {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid var(--glass-border);
+        color: var(--text-main);
+        padding: 4px 10px;
+        border-radius: 6px;
+        font-size: 0.75rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .btn-action-small:hover {
+        background: rgba(255, 255, 255, 0.1);
+        border-color: var(--primary);
+        color: var(--primary);
+    }
+
+    /* Source Control Modal */
+    .modal-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.6);
+        backdrop-filter: blur(4px);
+        z-index: 1000;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .modal-content {
+        background: var(--bg-color);
+        border: 1px solid var(--glass-border);
+        border-radius: var(--space-4);
+        padding: var(--space-6);
+        max-width: 500px;
+        width: 100%;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+    }
+
+    .actions {
+        display: flex;
+        justify-content: space-between;
+        margin-top: var(--space-8);
+    }
+
+    .btn-outline {
+        display: inline-flex;
+        align-items: center;
+        background: transparent;
+        color: var(--text-main);
+        text-decoration: none;
+        border: 1px solid var(--glass-border);
+        padding: 0.75rem 1.5rem;
+        border-radius: 8px;
+        font-size: 0.95rem;
+        font-weight: 500;
+        transition: all 0.2s ease;
+    }
+
+    .btn-outline:hover {
+        background: rgba(255, 255, 255, 0.05);
+        border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    .btn-outline svg {
+        width: 18px;
+        height: 18px;
+        margin-right: 8px;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 3rem 1rem;
+        color: var(--text-muted);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="results-container">
+    <div style="text-align: center;" class="glass-card">
+
+        <div class="badge">
+            <svg fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd"
+                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                    clip-rule="evenodd"></path>
+            </svg>
+            Extraction Complete
+        </div>
+
+        <h2>Financial Data Results</h2>
+        <p class="subtitle">Key metrics successfully parsed by Gemini AI.</p>
+
+        <div class="table-wrapper">
+            {% if data and data|length > 0 %}
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 20%;">Metric</th>
+                        <th>2024</th>
+                        <th>2025</th>
+                        <th>YoY Growth</th>
+                        <th>Trend</th>
+                        <th style="text-align: center;">Status</th>
+                        <th style="text-align: right;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in data %}
+                    <tr>
+                        <td class="metric-cell"
+                            title="{% if item.sub_components %}Contains: {{ item.sub_components|join(', ') }}{% endif %}">
+                            {% if item is mapping and 'metric' in item %}
+                            {{ item.metric }}
+                            {% if item.sub_components %}
+                            <span style="font-size: 0.7rem; color: var(--text-muted); display: block;">+
+                                Sub-components</span>
+                            {% endif %}
+                            {% else %}
+                            {{ item }}
+                            {% endif %}
+                        </td>
+                        <td class="value-cell">
+                            {{ item.value_2024 if item is mapping and 'value_2024' in item else '-' }}
+                        </td>
+                        <td class="value-cell">
+                            {{ item.value_2025 if item is mapping and 'value_2025' in item else '-' }}
+                        </td>
+                        <td>
+                            {% if item is mapping and 'percentage_change' in item and item.percentage_change is not none
+                            %}
+                            {% set pct = item.percentage_change %}
+                            {% if pct > 0 %}
+                            <span class="growth-positive">+{{ pct }}%</span>
+                            {% elif pct < 0 %} <span class="growth-negative">{{ pct }}%</span>
+                                {% else %}
+                                <span>0.00%</span>
+                                {% endif %}
+                                {% else %}
+                                -
+                                {% endif %}
+                        </td>
+                        <td>
+                            {% if item is mapping and item.percentage_change is not none %}
+                            <canvas class="sparkline-canvas" data-v24="{{ item.value_2024|replace('\"', ' \\\"') }}"
+                                data-v25="{{ item.value_2025|replace('\"', ' \\\"') }}"
+                                data-pct="{{ item.percentage_change }}"></canvas>
+                            {% else %}
+                            -
+                            {% endif %}
+                        </td>
+                        <td class="status-cell" style="text-align: center;">
+                            {% set status_class = 'status-extracted' %}
+                            {% if item is mapping and 'status' in item %}
+                            {% if item.status == 'Verified' %}
+                            {% set status_class = 'status-verified' %}
+                            {% elif item.status == 'Math Mismatch' %}
+                            {% set status_class = 'status-mismatch' %}
+                            {% endif %}
+                            <span class="status-badge {{ status_class }}">{{ item.status }}</span>
+                            {% else %}
+                            <span class="status-badge {{ status_class }}">EXTRACTED</span>
+                            {% endif %}
+                        </td>
+                        <td style="text-align: right;">
+                            {% if item is mapping and 'snippet' in item %}
+                            <button class="btn-action-small"
+                                onclick="showSource(`{{ item.page }}`, `{{ item.snippet|replace('\`', '\\\`') }}`)">Check
+                                Source</button>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="empty-state">
+                <div style="font-size: 3rem; margin-bottom: 1rem;">🔍</div>
+                <h3>No data found</h3>
+                <p>We couldn't extract any structured financial data from this document.</p>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="actions">
+            <div>
+                <a href="/api/export/{{ filing.id }}" class="btn-gradient"
+                    style="text-decoration: none; display: inline-flex;">
+                    <svg fill="currentColor" viewBox="0 0 20 20" style="width: 18px; height: 18px; margin-right: 8px;">
+                        <path fill-rule="evenodd"
+                            d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z"
+                            clip-rule="evenodd"></path>
+                    </svg>
+                    Export to Excel
+                </a>
+            </div>
+            <a href="{{ url_for('dashboard') }}" class="btn-outline">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                </svg>
+                Upload Another Document
+            </a>
+        </div>
+
+    </div>
+</div>
+
+<!-- Source Control Modal -->
+<div class="modal-overlay" id="sourceModal" onclick="closeSource()">
+    <div class="modal-content" onclick="event.stopPropagation()">
+        <h3 style="margin-top: 0; color: var(--primary);">Source Integrity Check</h3>
+        <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 5px;">Found on Page: <strong
+                id="modalPage" style="color: var(--text-main);"></strong></p>
+        <div
+            style="background: rgba(255, 255, 255, 0.05); border: 1px solid var(--glass-border); padding: 15px; border-radius: 8px; font-style: italic; line-height: 1.5;">
+            " <span id="modalSnippet"></span> "
+        </div>
+        <div style="text-align: right; margin-top: 20px;">
+            <button onclick="closeSource()" class="btn-gradient"
+                style="min-height: 36px; padding: 6px 16px;">Close</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    function showSource(page, snippet) {
+        document.getElementById('modalPage').innerText = page;
+        document.getElementById('modalSnippet').innerText = snippet;
+        document.getElementById('sourceModal').style.display = 'flex';
+    }
+
+    function closeSource() {
+        document.getElementById('sourceModal').style.display = 'none';
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        const canvases = document.querySelectorAll('.sparkline-canvas');
+        Chart.defaults.color = '#94A3B8';
+        Chart.defaults.font.family = 'Inter';
+
+        canvases.forEach(canvas => {
+            const pct = parseFloat(canvas.dataset.pct);
+
+            // Color mapping based on growth
+            let lineColor = '#94A3B8'; // Neutral
+            if (pct > 0) lineColor = '#10B981'; // Green
+            if (pct < 0) lineColor = '#EF4444'; // Red
+
+            // Artificial Y values to show slope
+            let y1 = 50;
+            let y2 = y1 + (pct > 0 ? 20 : (pct < 0 ? -20 : 0));
+            // Just want a distinct slope, clamp maximum angles visually
+
+            new Chart(canvas, {
+                type: 'line',
+                data: {
+                    labels: ['2024', '2025'],
+                    datasets: [{
+                        data: [y1, y2],
+                        borderColor: lineColor,
+                        borderWidth: 2,
+                        tension: 0.1,
+                        pointRadius: 0,
+                        pointHoverRadius: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false }, tooltip: { enabled: false } },
+                    scales: {
+                        x: { display: false },
+                        y: { display: false, min: 0, max: 100 }
+                    },
+                    layout: { padding: 0 }
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}

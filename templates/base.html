@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Research Portal{% endblock %}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* Vibrant Dark Theme Palette */
+            --bg-color: #0A0F1C;
+            --text-main: #FFFFFF;
+            --text-muted: #94A3B8;
+
+            /* Primary Vibrant Accents */
+            --primary: #06B6D4;
+            /* Electric Cyan */
+            --primary-hover: #0891B2;
+            /* Bright Turquoise */
+            --gradient-start: #EC4899;
+            /* Hot Pink */
+            --gradient-end: #8B5CF6;
+            /* Vivid Purple */
+
+            /* Dark Glassmorphism */
+            --glass-bg: rgba(15, 23, 42, 0.6);
+            --glass-border: rgba(255, 255, 255, 0.15);
+            --glass-shadow: 0 8px 32px rgba(236, 72, 153, 0.15);
+            /* Pink/purple glow */
+
+            /* Status Colors */
+            --error: #EF4444;
+            --success: #10B981;
+
+            /* Spacing System (8px grid with 4px half-steps) */
+            --space-1: 4px;
+            --space-2: 8px;
+            --space-3: 12px;
+            --space-4: 16px;
+            --space-5: 20px;
+            --space-6: 24px;
+            --space-8: 32px;
+            --space-10: 40px;
+            --space-12: 48px;
+            --space-16: 64px;
+            --space-20: 80px;
+
+            /* Sizing Standards */
+            --btn-min-height: 44px;
+            --content-max-width: 1240px;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background-image:
+                radial-gradient(at 0% 0%, rgba(236, 72, 153, 0.15) 0px, transparent 60%),
+                radial-gradient(at 100% 0%, rgba(139, 92, 246, 0.15) 0px, transparent 60%);
+            background-attachment: fixed;
+        }
+
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: var(--space-4) var(--space-8);
+            background: rgba(10, 15, 28, 0.8);
+            /* Darker background for navbar */
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-bottom: 1px solid var(--glass-border);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            /* Subtle shadow for navbar */
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .navbar-brand {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--text-main);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+        }
+
+        .navbar-nav {
+            display: flex;
+            gap: var(--space-6);
+            align-items: center;
+        }
+
+        .nav-link {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.95rem;
+            font-weight: 500;
+            transition: color 0.2s ease;
+        }
+
+        .nav-link:hover {
+            color: var(--text-main);
+        }
+
+        /* Standardized Buttons (2:1 ratio, 44px hit rect) */
+        .btn-gradient {
+            background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end));
+            color: white;
+            border: none;
+            padding: var(--space-3) var(--space-6);
+            border-radius: var(--space-2);
+            font-weight: 500;
+            font-size: 0.95rem;
+            text-decoration: none;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            cursor: pointer;
+            box-shadow: 0 4px 14px rgba(236, 72, 153, 0.4);
+            /* Shadow reflecting new gradient start */
+            min-height: var(--btn-min-height);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            box-sizing: border-box;
+            position: relative;
+        }
+
+        .btn-gradient:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(236, 72, 153, 0.6);
+            /* Enhanced shadow on hover */
+        }
+
+        /* Layout Grid and Main Container Centers */
+        .dashboard-layout {
+            display: flex;
+            flex: 1;
+            width: 100%;
+        }
+
+        .sidebar {
+            width: 250px;
+            background: rgba(15, 23, 42, 0.4);
+            /* Darker glassmorphic background for sidebar */
+            border-right: 1px solid var(--glass-border);
+            box-shadow: 4px 0 12px rgba(0, 0, 0, 0.1);
+            /* Subtle shadow for sidebar */
+            padding: var(--space-6) var(--space-4);
+            display: flex;
+            flex-direction: column;
+            box-sizing: border-box;
+        }
+
+        .sidebar-nav {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-2);
+        }
+
+        .sidebar-link {
+            display: flex;
+            align-items: center;
+            gap: var(--space-3);
+            padding: var(--space-3) var(--space-4);
+            color: var(--text-muted);
+            text-decoration: none;
+            border-radius: var(--space-2);
+            font-size: 0.95rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .sidebar-link:hover {
+            color: var(--primary);
+            background: rgba(6, 182, 212, 0.1);
+            /* Soft cyan tint on hover */
+        }
+
+        .sidebar-link svg {
+            width: 18px;
+            height: 18px;
+            flex-shrink: 0;
+            transition: color 0.2s ease;
+        }
+
+        .sidebar-link.active {
+            color: var(--primary);
+            background: rgba(6, 182, 212, 0.15);
+            /* Slightly darker cyan tint */
+            font-weight: 600;
+        }
+
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            max-width: var(--content-max-width);
+            margin: 0 auto;
+            padding: var(--space-8) var(--space-8);
+            box-sizing: border-box;
+        }
+
+        /* Glassmorphism Auth Forms */
+        .auth-container {
+            width: 100%;
+            max-width: 440px;
+            margin-top: var(--space-12);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .glass-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--space-4);
+            padding: var(--space-8);
+            box-shadow: var(--glass-shadow);
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .glass-card h2 {
+            margin-top: 0;
+            margin-bottom: var(--space-2);
+            font-size: 1.75rem;
+            font-weight: 600;
+            text-align: center;
+        }
+
+        .glass-card p.subtitle {
+            text-align: center;
+            color: var(--text-muted);
+            margin-bottom: var(--space-8);
+            font-size: 0.95rem;
+        }
+
+        /* Single column form grouping */
+        .form-group {
+            margin-bottom: var(--space-6);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: var(--space-2);
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: var(--text-muted);
+        }
+
+        .form-control {
+            width: 100%;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid var(--glass-border);
+            color: var(--text-main);
+            padding: var(--space-3) var(--space-4);
+            border-radius: var(--space-2);
+            font-size: 1rem;
+            font-family: 'Inter', sans-serif;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+            box-sizing: border-box;
+            min-height: var(--btn-min-height);
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+        }
+
+        /* Align Form Actions Contextually */
+        .form-actions {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: var(--space-8);
+        }
+
+        /* Flashes */
+        .flashes {
+            list-style: none;
+            padding: 0;
+            margin: 0 0 var(--space-6) 0;
+        }
+
+        .flashes li {
+            padding: var(--space-3) var(--space-4);
+            border-radius: var(--space-2);
+            font-size: 0.9rem;
+            margin-bottom: var(--space-2);
+            animation: shake 0.5s cubic-bezier(.36, .07, .19, .97) both;
+        }
+
+        .flashes li.error {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            color: #FCA5A5;
+        }
+
+        .flashes li.success {
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            color: #6EE7B7;
+        }
+
+        @keyframes shake {
+
+            10%,
+            90% {
+                transform: translate3d(-1px, 0, 0);
+            }
+
+            20%,
+            80% {
+                transform: translate3d(2px, 0, 0);
+            }
+
+            30%,
+            50%,
+            70% {
+                transform: translate3d(-4px, 0, 0);
+            }
+
+            40%,
+            60% {
+                transform: translate3d(4px, 0, 0);
+            }
+        }
+
+        /* Checkbox */
+        .form-checkbox {
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+            margin-bottom: var(--space-6);
+        }
+
+        .form-checkbox input[type="checkbox"] {
+            accent-color: var(--primary);
+            width: 16px;
+            height: 16px;
+        }
+
+        .form-checkbox label {
+            margin: 0;
+            font-size: 0.85rem;
+            cursor: pointer;
+        }
+
+        /* Auth links */
+        .auth-links {
+            text-align: center;
+            margin-top: var(--space-8);
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+
+        .auth-links a {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .auth-links a:hover {
+            text-decoration: underline;
+        }
+
+        /* Loading Spinner */
+        .spinner-hidden {
+            display: none;
+        }
+
+        .btn-loading {
+            color: transparent !important;
+        }
+
+        .btn-loading::after {
+            content: '';
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            width: 20px;
+            height: 20px;
+            margin: -10px 0 0 -10px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: button-spin 0.8s linear infinite;
+        }
+
+        @keyframes button-spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+    {% block extra_css %}
+    {% endblock %}
+</head>
+
+<body>
+
+    <nav class="navbar">
+        <a href="{{ url_for('index') }}" class="navbar-brand">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path
+                    d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z">
+                </path>
+                <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                <line x1="12" y1="22.08" x2="12" y2="12"></line>
+            </svg>
+            Research Portal
+        </a>
+        <div class="navbar-nav">
+            {% if current_user.is_authenticated %}
+            <span class="nav-link" style="color: var(--text-muted); font-size: 0.85rem;">{{ current_user.username
+                }}</span>
+            <a href="{{ url_for('dashboard') }}" class="nav-link">Dashboard</a>
+            <a href="{{ url_for('auth.logout') }}" class="nav-link">Log out</a>
+            {% else %}
+            <a href="{{ url_for('auth.login') }}" class="nav-link">Log in</a>
+            <a href="{{ url_for('auth.signup') }}" class="btn-gradient">Sign up</a>
+            {% endif %}
+        </div>
+    </nav>
+
+    <div class="dashboard-layout">
+        {% if current_user.is_authenticated and not hide_sidebar %}
+        <aside class="sidebar">
+            <div class="sidebar-nav">
+                <a href="{{ url_for('dashboard') }}"
+                    class="sidebar-link {% if request.endpoint == 'dashboard' %}active{% endif %}">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z">
+                        </path>
+                    </svg>
+                    Dashboard
+                </a>
+                <a href="{{ url_for('projects') }}"
+                    class="sidebar-link {% if request.endpoint == 'projects' %}active{% endif %}">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path>
+                    </svg>
+                    My Projects
+                </a>
+                <a href="{{ url_for('archive') }}"
+                    class="sidebar-link {% if request.endpoint == 'archive' %}active{% endif %}">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4">
+                        </path>
+                    </svg>
+                    Archive
+                </a>
+                <a href="{{ url_for('settings') }}"
+                    class="sidebar-link {% if request.endpoint == 'settings' %}active{% endif %}">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z">
+                        </path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                    </svg>
+                    Settings
+                </a>
+            </div>
+        </aside>
+        {% endif %}
+
+        <main class="main-content">
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+
+    <script>
+        // Simple loading state for forms
+        document.querySelectorAll('form').forEach(form => {
+            form.addEventListener('submit', function () {
+                const btn = this.querySelector('button[type="submit"]');
+                if (btn) btn.classList.add('btn-loading');
+            });
+        });
+    </script>
+</body>
+
+</html>
