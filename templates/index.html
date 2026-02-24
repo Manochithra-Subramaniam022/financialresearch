@@ -286,9 +286,9 @@
                 </button>
 
                 <form action="{{ url_for('delete_project', project_id=project.id) }}" method="POST"
-                    style="margin: 0; display: inline;"
-                    onsubmit="event.stopPropagation(); return confirm('Are you sure you want to completely delete this dataset?');">
-                    <button type="submit" class="archive-btn" aria-label="Delete Project"
+                    style="margin: 0; display: inline;" id="delete-form-{{ project.id }}">
+                    <button type="button" class="archive-btn" aria-label="Delete Project"
+                        onclick="event.stopPropagation(); if(confirm('Are you sure you want to completely delete this dataset?')){ document.getElementById('delete-form-{{ project.id }}').submit(); }"
                         style="color: #ef4444; border-color: rgba(239,68,68,0.3); background: rgba(239,68,68,0.1);">
                         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -441,5 +441,42 @@
     // Prevent default drop on document to avoid opening file in browser
     document.addEventListener('dragover', e => e.preventDefault());
     document.addEventListener('drop', e => e.preventDefault());
+
+    function archiveProject(event, projectId) {
+        event.stopPropagation();
+        if (confirm('Archive this project? It will be moved to the Archive tab.')) {
+            fetch(`/api/archive/${projectId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ is_archived: true })
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        // Remove the card from the active dashboard
+                        const btn = event.currentTarget;
+                        const card = btn.closest('.filing-card');
+                        if (card) {
+                            card.style.opacity = '0';
+                            setTimeout(() => {
+                                card.remove();
+                                // If no cards left, maybe refresh to show empty state
+                                if (document.querySelectorAll('.filing-card').length === 0) {
+                                    window.location.reload();
+                                }
+                            }, 300);
+                        }
+                    } else {
+                        alert('Failed to archive project.');
+                    }
+                })
+                .catch(err => {
+                    console.error('Error archiving project:', err);
+                    alert('An error occurred while archiving.');
+                });
+        }
+    }
 </script>
 {% endblock %}
