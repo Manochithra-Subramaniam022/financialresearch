@@ -160,9 +160,9 @@
                     </svg>
                 </button>
                 <form action="{{ url_for('delete_project', project_id=project.id) }}" method="POST"
-                    style="margin: 0; display: inline;"
-                    onsubmit="event.stopPropagation(); return confirm('Are you sure you want to completely delete this dataset?');">
+                    style="margin: 0; display: inline;">
                     <button type="submit" class="archive-btn" aria-label="Delete Project"
+                        onclick="event.stopPropagation(); if(!confirm('Are you sure you want to completely delete this dataset?')) { event.preventDefault(); }"
                         style="color: #ef4444; border-color: rgba(239,68,68,0.3); background: rgba(239,68,68,0.1);">
                         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
