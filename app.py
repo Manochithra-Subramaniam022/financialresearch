@@ -1,5 +1,4 @@
 import os
-api_key = os.environ.get("GEMINI_API_KEY")
 import json
 import tempfile
 from flask import Flask, render_template, request, jsonify, flash, redirect, url_for, send_file
