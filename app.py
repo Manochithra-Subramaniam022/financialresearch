@@ -1,4 +1,5 @@
 import os
+api_key = os.environ.get("GEMINI_API_KEY")
 import json
 import tempfile
 from flask import Flask, render_template, request, jsonify, flash, redirect, url_for, send_file
@@ -17,6 +18,7 @@ from auth import auth as auth_blueprint
 from src.processor import process_financials
 from src.validator import audit_financials
 
+
 # Load environment variables
 load_dotenv()
 
@@ -27,6 +29,9 @@ app.secret_key = 'super_secret_key_for_flash_messages'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///research_portal.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db.init_app(app)
+
+with app.app_context():
+    db.create_all()
 
 # Configure Flash-Login
 login_manager = LoginManager()
