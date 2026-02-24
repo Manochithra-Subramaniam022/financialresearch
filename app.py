@@ -335,19 +335,6 @@ def archive():
     projects = ResearchProject.query.filter_by(user_id=current_user.id, is_archived=True).order_by(ResearchProject.uploaded_at.desc()).all()
     return render_template('archive.html', projects=projects, title="Archive")
 
-@app.route('/delete_project/<int:project_id>', methods=['POST'])
-@login_required
-def delete_project(project_id):
-    project = ResearchProject.query.get_or_404(project_id)
-    if project.user_id != current_user.id:
-        flash('Unauthorized access.', 'error')
-        return redirect(url_for('dashboard'))
-    
-    db.session.delete(project)
-    db.session.commit()
-    flash('Project deleted successfully.', 'success')
-    return redirect(request.referrer or url_for('dashboard'))
-
 @app.route('/reprocess_project/<int:project_id>', methods=['POST'])
 @login_required
 def reprocess_project(project_id):
