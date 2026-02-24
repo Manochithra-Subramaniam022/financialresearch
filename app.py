@@ -199,6 +199,17 @@ def archive_project(project_id):
     db.session.commit()
     return jsonify({"success": True, "is_archived": project.is_archived})
 
+@app.route('/api/delete/<int:project_id>', methods=['DELETE'])
+@login_required
+def delete_project(project_id):
+    project = ResearchProject.query.get_or_404(project_id)
+    if project.user_id != current_user.id:
+        return jsonify({"error": "Unauthorized"}), 403
+        
+    db.session.delete(project)
+    db.session.commit()
+    return jsonify({"success": True})
+
 @app.route('/result/<int:project_id>', methods=['GET'])
 @login_required
 def view_result(project_id):
