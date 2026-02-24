@@ -1,11 +1,11 @@
 import os
 import json
 import re
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 from dotenv import load_dotenv
 
 load_dotenv()
-genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
 def process_financials(text):
     if not text.strip():
@@ -35,17 +35,17 @@ def process_financials(text):
     )
     
     try:
-        model = genai.GenerativeModel(
-            'gemini-2.5-flash',
-            generation_config=genai.GenerationConfig(
-                response_mime_type="application/json",
+        client = genai.Client()
+        response = client.models.generate_content(
+            model='gemini-2.5-flash',
+            contents=[
+                "You output strict JSON. Output an array of objects like [{\"metric\": \"Revenue\", \"value_2024\": \"100M\", \"value_2025\": \"110M\", \"percentage_change\": 10.0, \"status\": \"VERIFIED\", \"sub_components\": [\"Product sales\"], \"page\": 1, \"snippet\": \"Total revenue reached\"}].",
+                prompt
+            ],
+            config=types.GenerateContentConfig(
+                response_mime_type="application/json"
             )
         )
-        
-        response = model.generate_content([
-            "You output strict JSON. Output an array of objects like [{\"metric\": \"Revenue\", \"value_2024\": \"100M\", \"value_2025\": \"110M\", \"percentage_change\": 10.0, \"status\": \"VERIFIED\", \"sub_components\": [\"Product sales\"], \"page\": 1, \"snippet\": \"Total revenue reached\"}].",
-            prompt
-        ])
         
         content = response.text
         data = json.loads(content)

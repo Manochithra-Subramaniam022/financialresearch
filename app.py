@@ -5,7 +5,6 @@ from flask import Flask, render_template, request, jsonify, flash, redirect, url
 from flask_login import LoginManager, login_required, current_user
 from datetime import datetime, timedelta
 import pdfplumber
-import google.generativeai as genai
 from dotenv import load_dotenv
 import threading
 import pandas as pd
@@ -44,10 +43,6 @@ def load_user(user_id):
 
 # Register Auth Blueprint
 app.register_blueprint(auth_blueprint)
-
-# Initialize Gemini client
-# Ensure GEMINI_API_KEY is set in your environment or .env file
-genai.configure(api_key=os.getenv('GEMINI_API_KEY'))
 
 def extract_text_from_pdf(pdf_path):
     """Extract text from a PDF file preserving layout and adding page markers."""
